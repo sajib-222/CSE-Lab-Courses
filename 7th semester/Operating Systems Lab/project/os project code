@@ -1,1 +1,168 @@
+#!/bin/bash
+
+display_menu() {
+    echo "Number System Conversion Tool"
+    echo "1. Decimal to Binary"
+    echo "2. Decimal to Octal"
+    echo "3. Decimal to Hexadecimal"
+    echo "4. Binary to Decimal"
+    echo "5. Octal to Decimal"
+    echo "6. Hexadecimal to Decimal"
+    echo "7. Custom Conversion (Any to Any)"
+    echo "8. Exit"
+    echo -n "Choose an option: "
+}
+
+is_valid_number() {
+    local number=$1
+    local base=$2
+    case $base in
+        2)  [[ $number =~ ^[01]+$ ]] ;;
+        8)  [[ $number =~ ^[0-7]+$ ]] ;;
+        10) [[ $number =~ ^[0-9]+$ ]] ;;
+        16) [[ $number =~ ^[0-9A-Fa-f]+$ ]] ;;
+        *)  return 1 ;; # Invalid base
+    esac
+}
+
+convert_from_decimal() {
+    local decimal=$1
+    local base=$2
+    local result=""
+    local digits="0123456789ABCDEF"
+
+    while [ "$decimal" -gt 0 ]; do
+        remainder=$((decimal % base))
+        result="${digits:remainder:1}$result"
+        decimal=$((decimal / base))
+    done
+
+    echo "${result:-0}" # Return 0 if result is empty
+}
+
+convert_to_decimal() {
+    local number=$1
+    local base=$2
+    local length=${#number}
+    local decimal=0
+    local digits="0123456789ABCDEF"
+
+    for (( i=0; i<length; i++ )); do
+        char=${number:i:1}
+        value=$(expr index "$digits" "${char^^}") 
+        value=$((value - 1))  
+        decimal=$((decimal * base + value))
+    done
+
+    echo "$decimal"
+}
+
+convert_base_to_base() {
+    local input_base=$1
+    local output_base=$2
+    local number=$3
+
+    if ! is_valid_number "$number" "$input_base"; then
+        echo "Invalid number '$number' for base $input_base. Please try again."
+        return 1
+    fi
+
+    decimal=$(convert_to_decimal "$number" "$input_base")
+
+    result=$(convert_from_decimal "$decimal" "$output_base")
+
+    echo "$result"
+}
+
+process_conversion() {
+    case $1 in
+        1)
+            echo -n "Enter a Decimal number: "
+            read decimal
+            if is_valid_number "$decimal" 10; then
+                echo "Binary: $(convert_from_decimal "$decimal" 2)"
+            else
+                echo "Invalid Decimal number. Please try again."
+            fi
+            ;;
+        2)
+            echo -n "Enter a Decimal number: "
+            read decimal
+            if is_valid_number "$decimal" 10; then
+                echo "Octal: $(convert_from_decimal "$decimal" 8)"
+            else
+                echo "Invalid Decimal number. Please try again."
+            fi
+            ;;
+        3)
+            echo -n "Enter a Decimal number: "
+            read decimal
+            if is_valid_number "$decimal" 10; then
+                echo "Hexadecimal: $(convert_from_decimal "$decimal" 16)"
+            else
+                echo "Invalid Decimal number. Please try again."
+            fi
+            ;;
+        4)
+            echo -n "Enter a Binary number: "
+            read binary
+            if is_valid_number "$binary" 2; then
+                echo "Decimal: $(convert_to_decimal "$binary" 2)"
+            else
+                echo "Invalid Binary number. Please try again."
+            fi
+            ;;
+        5)
+            echo -n "Enter an Octal number: "
+            read octal
+            if is_valid_number "$octal" 8; then
+                echo "Decimal: $(convert_to_decimal "$octal" 8)"
+            else
+                echo "Invalid Octal number. Please try again."
+            fi
+            ;;
+        6)
+            echo -n "Enter a Hexadecimal number: "
+            read hex
+            if is_valid_number "$hex" 16; then
+                echo "Decimal: $(convert_to_decimal "$hex" 16)"
+            else
+                echo "Invalid Hexadecimal number. Please try again."
+            fi
+            ;;
+        7)
+            echo -n "Enter the Input Base (2, 8, 10, or 16): "
+            read input_base
+            echo -n "Enter the Output Base (2, 8, 10, or 16): "
+            read output_base
+            echo -n "Enter the Number to Convert: "
+            read number
+
+            if ! [[ "$input_base" =~ ^(2|8|10|16)$ ]] || ! [[ "$output_base" =~ ^(2|8|10|16)$ ]]; then
+                echo "Invalid base(s). Please enter 2, 8, 10, or 16."
+            else
+                result=$(convert_base_to_base "$input_base" "$output_base" "$number")
+                if [ $? -ne 0 ]; then
+                    echo "Conversion failed due to invalid input. Please try again."
+                else
+                    echo "Converted Number: $result"
+                fi
+            fi
+            ;;
+
+        8)
+            echo "Exiting..."; exit 0
+            ;;
+        *)
+            echo "Invalid option. Please try again."
+            ;;
+    esac
+}
+
+while true; do
+    display_menu
+    read choice
+    process_conversion $choice
+    echo ""
+done
 
